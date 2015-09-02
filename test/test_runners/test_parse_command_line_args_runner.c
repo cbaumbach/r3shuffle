@@ -8,7 +8,6 @@ TEST_GROUP_RUNNER(parse_command_line_args)
     RUN_TEST_CASE(parse_command_line_args, long_digits_with_equal);
     RUN_TEST_CASE(parse_command_line_args, short_digits);
     RUN_TEST_CASE(parse_command_line_args, bad_digits_gives_error);
-    RUN_TEST_CASE(parse_command_line_args, double_format);
     RUN_TEST_CASE(parse_command_line_args, digits_over_100_gives_error);
     RUN_TEST_CASE(parse_command_line_args, digits_under_0_gives_error);
     RUN_TEST_CASE(parse_command_line_args, output_file_is_set);

@@ -11,7 +11,6 @@ struct Params {
     char *output_file;          /* path to output file */
     char *layout_file;          /* path to layout file */
     char *data_file;            /* path to data file */
-    char fmt[10];               /* print format string */
 };
 
 void initialize_parameters(struct Params *params);

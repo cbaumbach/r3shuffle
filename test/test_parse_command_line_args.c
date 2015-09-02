@@ -92,22 +92,6 @@ TEST(parse_command_line_args, bad_digits_gives_error)
         "foo", err_msg);
 }
 
-/* Test that double printing format string is set correctly. */
-TEST(parse_command_line_args, double_format)
-{
-    char *argv[] = {"ignore", "-d4", "test/data/input"};
-
-    status = parse_command_line_args(NELEMS(argv), argv, &params);
-
-    TEST_ASSERT_EQUAL_INT_MESSAGE(1, status, "parse status");
-
-    clear_err_msg();
-    status = validate_command_line_args(&params);
-
-    TEST_ASSERT_EQUAL_INT_MESSAGE(1, status, "validate status");
-    TEST_ASSERT_EQUAL_STRING_MESSAGE("%.4f", params.fmt, "fmt");
-}
-
 /* Test that supplying a number >= 100 as the argument to --digits
    causes an error. */
 TEST(parse_command_line_args, digits_over_100_gives_error)

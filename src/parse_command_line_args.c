@@ -14,8 +14,6 @@
 
 void initialize_parameters(struct Params *params)
 {
-    int i;
-
     params->ncolumn = 0;
     params->columns = NULL;
     params->ucp2acp = NULL;
@@ -25,8 +23,6 @@ void initialize_parameters(struct Params *params)
     params->output_file = NULL;
     params->layout_file = NULL;
     params->data_file   = NULL;
-    for (i = 0; (unsigned)i < NELEMS(params->fmt); i++)
-        params->fmt[i] = '\0';
 }
 
 int parse_command_line_args(int argc, char *argv[],
@@ -160,9 +156,8 @@ int validate_command_line_args(struct Params *params)
     struct stat buf;
     int status;
 
-    /* We require the number of significant digits be non-negative and
-       <= 99.  This way we know that the width specification in the
-       format will never occupy more than 2 characters. */
+    /* We arbitrarily require that the number of significant digits be
+       between 0 and 99 inclusive. */
     if (params->ndigit > 99) {
         set_err_msg("argument to --digits must be <100");
         return 0;
@@ -171,7 +166,6 @@ int validate_command_line_args(struct Params *params)
         set_err_msg("argument to --digits must be >=0");
         return 0;
     }
-    sprintf(params->fmt, "%%.%df", params->ndigit);
 
     /* Check that output file is writable. */
     if ((file = params->output_file) != NULL) {
