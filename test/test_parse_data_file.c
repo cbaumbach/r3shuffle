@@ -125,3 +125,18 @@ TEST(parse_data_file, index2offset_is_reverse_of_offset2index)
         TEST_ASSERT_EQUAL_INT(i, offset);
     }
 }
+
+/* Test that offset2index is the inverse of index2offset. */
+TEST(parse_data_file, offset2index_is_reverse_of_index2offset)
+{
+    int snp, trait, s, t;
+    unsigned long offset;
+
+    for (s = 0; s < layout.nsnp; s++)
+        for (t = 0; t < layout.ntrait; t++) {
+            index2offset(s, t, &offset, &layout);
+            offset2index(offset, &snp, &trait, &layout);
+            TEST_ASSERT_EQUAL_INT(t, trait);
+            TEST_ASSERT_EQUAL_INT(s, snp);
+        }
+}
