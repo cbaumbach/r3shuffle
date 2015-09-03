@@ -1,6 +1,8 @@
 #ifndef PARSE_LAYOUT_FILE_H
 #define PARSE_LAYOUT_FILE_H
 
+#include "parse_command_line_args.h"
+
 struct Layout {
     int magic_number;      /* magic number */
     int bytes_per_double;  /* number of bytes in a double */
@@ -24,7 +26,7 @@ int validate_layout(struct Layout *layout);
 
 int write_layout_file(const char *file, struct Layout *layout);
 
-int set_column_print_order(char **columns, int ncolumn, int *ucp2acp,
+int set_column_print_order(struct Params *params,
     struct Layout *layout);
 
 void print_columns(struct Layout *layout);

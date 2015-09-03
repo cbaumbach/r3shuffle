@@ -277,7 +277,7 @@ int write_layout_file(const char *file, struct Layout *layout)
    user-supplied column label (user column position, ucp) to the index
    of the corresponding column among the above regression result
    columns (actual column position, acp). */
-int set_column_print_order(char **columns, int ncolumn, int *ucp2acp,
+int set_column_print_order(struct Params *params,
     struct Layout *layout)
 {
     int i, j, n, found;
@@ -286,28 +286,30 @@ int set_column_print_order(char **columns, int ncolumn, int *ucp2acp,
     n = layout->nvar + layout->nvar + layout->ncov;
 
     for (i = 0; i < ncolumn; i++) {
+    /* Use only columns specified on command-line. */
+    for (i = 0; i < params->ncolumn; i++) {
 
         found = 0;
-        s = columns[i];
+        s = params->columns[i];
 
         /* Search user column label among beta labels. */
         for (j = 0; j < layout->nvar && !found; j++)
             if (!strncmp(s, layout->beta_labels[j], layout->max_char)) {
-                ucp2acp[i] = j;
+                params->ucp2acp[i] = j;
                 found = 1;
             }
 
         /* Search user column label among standard error labels.  */
         for (j = 0; j < layout->nvar && !found; j++)
             if (!strncmp(s, layout->se_labels[j], layout->max_char)) {
-                ucp2acp[i] = layout->nvar + j;
+                params->ucp2acp[i] = layout->nvar + j;
                 found = 1;
             }
 
         /* Search user column label among covariance labels. */
         for (j = 0; j < layout->ncov && !found; j++)
             if (!strncmp(s, layout->cov_labels[j], layout->max_char)) {
-                ucp2acp[i] = layout->nvar + layout->nvar + j;
+                params->ucp2acp[i] = layout->nvar + layout->nvar + j;
                 found = 1;
             }
 

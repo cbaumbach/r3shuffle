@@ -55,6 +55,7 @@ test/test_runners/test_parse_command_line_args_runner.o: \
 
 src/parse_layout_file.o: src/parse_layout_file.c \
         src/parse_layout_file.h \
+        src/parse_command_line_args.h \
         src/err_msg.h
 	gcc $(CFLAGS) -Isrc -c -o $@ $<
 

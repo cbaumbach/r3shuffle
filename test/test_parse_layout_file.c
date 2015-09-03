@@ -1,5 +1,6 @@
 #include "unity_fixture.h"
 #include "parse_layout_file.h"
+#include "parse_command_line_args.h"
 #include "err_msg.h"
 #include <stddef.h>
 
@@ -297,19 +298,21 @@ TEST(parse_layout_file, set_column_print_order_with_subset_of_columns)
     /* index: 0     1     2     3   4   5   6      7      8      */
 
     char *columns[] = {"se2", "cov0_2", "beta1"};
-    int correct_ucp2acp[] = {5, 7, 1, -9};
-    int ucp2acp[] = {-1, -1, -1, -9};
     int ncolumn = NELEMS(columns);
+    int ucp2acp[] = {-1, -1, -1, -9};
+    struct Params params = {ncolumn, columns, ucp2acp,
+                            0, 0, 0, NULL, NULL, NULL};
+    int correct_ucp2acp[] = {5, 7, 1, -9};
     int i;
 
     in = out;           /* pretend layout file was parsed correctly */
     clear_err_msg();
-    status = set_column_print_order(columns, ncolumn, ucp2acp, &in);
+    status = set_column_print_order(&params, &in);
     TEST_ASSERT_EQUAL_INT_MESSAGE(1, status,
         "set_column_print_order return value");
 
     for (i = 0; i < ncolumn + 1; i++)
-        TEST_ASSERT_EQUAL_INT(correct_ucp2acp[i], ucp2acp[i]);
+        TEST_ASSERT_EQUAL_INT(correct_ucp2acp[i], params.ucp2acp[i]);
 }
 
 /* Test that we are able to map user-supplied column labels that form
@@ -320,34 +323,38 @@ TEST(parse_layout_file, set_permuted_column_print_order)
     /* label: beta0 beta1 beta2 se0 se1 se2 cov0_1 cov0_2 cov1_2 */
     /* index: 0     1     2     3   4   5   6      7      8      */
 
-    char *columns[] = {"cov1_2", "beta2", "se1", "cov0_1", "se0",
-                       "beta0", "se2", "cov0_2", "beta1"};
-    int correct_ucp2acp[] = {8, 2, 4, 6, 3, 0, 5, 7, 1, -9};
-    int ucp2acp[] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -9};
+    char *columns[] = {"cov1_2", "beta2", "se1",    "cov0_1", "se0",
+                       "beta0",  "se2",   "cov0_2", "beta1"};
     int ncolumn = NELEMS(columns);
+    int ucp2acp[] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -9};
+    struct Params params = {ncolumn, columns, ucp2acp,
+                            0, 0, 0, NULL, NULL, NULL};
+    int correct_ucp2acp[] = {8, 2, 4, 6, 3, 0, 5, 7, 1, -9};
     int i;
 
     in = out;           /* pretend layout file was parsed correctly */
     clear_err_msg();
-    status = set_column_print_order(columns, ncolumn, ucp2acp, &in);
+    status = set_column_print_order(&params, &in);
     TEST_ASSERT_EQUAL_INT_MESSAGE(1, status,
         "set_column_print_order return value");
 
     for (i = 0; i < ncolumn + 1; i++)
-        TEST_ASSERT_EQUAL_INT(correct_ucp2acp[i], ucp2acp[i]);
+        TEST_ASSERT_EQUAL_INT(correct_ucp2acp[i], params.ucp2acp[i]);
 }
 
 /* Test that a user-supplied column label that does not correspond to
    any actual column label in the layout file causes an error. */
 TEST(parse_layout_file, invalid_user_supplied_column_label)
 {
-    char *columns[] = {"cov1_2", "beta2", "foobar"};
-    int ucp2acp[] = {-1, -1, -1, -9};
+    char *columns[] = {"cov1_2", "beta2", "foobar"};;
     int ncolumn = NELEMS(columns);
+    int ucp2acp[] = {-1, -1, -1, -9};
+    struct Params params = {ncolumn, columns, ucp2acp,
+                            0, 0, 0, NULL, NULL, NULL};
 
     in = out;           /* pretend layout file was parsed correctly */
     clear_err_msg();
-    status = set_column_print_order(columns, ncolumn, ucp2acp, &in);
+    status = set_column_print_order(&params, &in);
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status,
         "set_column_print_order return value");
     TEST_ASSERT_EQUAL_STRING("user-specified column doesn't exist: "

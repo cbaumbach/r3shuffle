@@ -34,8 +34,7 @@ int main(int argc, char **argv)
         goto SUCCESS;
     }
 
-    if (!set_column_print_order(params.columns, params.ncolumn,
-            params.ucp2acp, &layout))
+    if (!set_column_print_order(&params, &layout))
         goto ERROR;
 
     if (!parse_data_file(&params, &layout))
