@@ -10,6 +10,7 @@
 
 #define set_err_msg(...) snprintf(err_msg, ERR_MSG_MAXLEN, __VA_ARGS__)
 #define clear_err_msg() err_msg[0] = '\0'
+#define pr_err_msg() fprintf(stderr, "%s\n", err_msg)
 
 enum { ERR_MSG_MAXLEN = 200 };
 extern char err_msg[];
