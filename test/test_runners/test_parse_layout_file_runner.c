@@ -18,4 +18,5 @@ TEST_GROUP_RUNNER(parse_layout_file)
     RUN_TEST_CASE(parse_layout_file, set_column_print_order_with_subset_of_columns);
     RUN_TEST_CASE(parse_layout_file, set_permuted_column_print_order);
     RUN_TEST_CASE(parse_layout_file, invalid_user_supplied_column_label);
+    RUN_TEST_CASE(parse_layout_file, use_default_columns);
 }

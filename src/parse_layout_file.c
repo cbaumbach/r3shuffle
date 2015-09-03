@@ -280,12 +280,29 @@ int write_layout_file(const char *file, struct Layout *layout)
 int set_column_print_order(struct Params *params,
     struct Layout *layout)
 {
-    int i, j, n, found;
+    int i, j, n, found, *p;
     char *s;
+    size_t nbytes;
 
     n = layout->nvar + layout->nvar + layout->ncov;
 
-    for (i = 0; i < ncolumn; i++) {
+    /* Use all available columns in default order. */
+    if (params->ncolumn == 0) {
+        params->ncolumn = n;
+        nbytes = (params->ncolumn + 1) * sizeof(int);
+        if ((p = (int *) realloc(params->ucp2acp, nbytes)) == NULL) {
+            set_err_msg("failed to allocate %lu bytes",
+                (unsigned long) nbytes);
+            return 0;
+        }
+        params->ucp2acp = p;
+        for (i = 0; i < params->ncolumn; i++)
+            params->ucp2acp[i] = i;
+        params->ucp2acp[params->ncolumn] = -9;
+
+        return 1;
+    }
+
     /* Use only columns specified on command-line. */
     for (i = 0; i < params->ncolumn; i++) {
 

@@ -327,7 +327,7 @@ int parse_data_file(struct Params *params, struct Layout *layout)
 
     /* Print header. */
     fprintf(ofp, "snp trait");
-    if (params->ncolumn)
+    if (params->columns != NULL)
         for (i = 0; i < params->ncolumn; i++)
             fprintf(ofp, " %s", params->columns[i]);
     else {

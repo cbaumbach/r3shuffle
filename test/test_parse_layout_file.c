@@ -360,3 +360,47 @@ TEST(parse_layout_file, invalid_user_supplied_column_label)
     TEST_ASSERT_EQUAL_STRING("user-specified column doesn't exist: "
         "foobar", err_msg);
 }
+
+/* Test that if the user doesn't supply any --column's, we use all
+   columns in their default order. */
+TEST(parse_layout_file, use_default_columns)
+{
+    struct Params params = {0, NULL, NULL,
+                            0, 0, 0, NULL, NULL, NULL};
+    int i;
+
+    /* Whenever set_column_print_order is called in a real program
+       run, the ucp2acp member of the Params struct will be a pointer
+       to malloc'd memory.  However, if we try to reproduce this
+       setting here in the test case using a call to malloc, macros
+       defined in unity_fixture_malloc_overrides.h (which can be found
+       below unity's top-level directory in extras/fixture/src) will
+       replace the call to malloc by a call to unity's own allocation
+       function unity_malloc.  In addition to the required number of
+       bytes unity_malloc also allocates space for a GuardBytes struct
+       and puts the guard first in the malloc'd memory.  However, the
+       pointer returned by unity_malloc points just past the guard.
+       Therefore, the pointer doesn't point _to_ malloc'd memory but
+       _into_ malloc'd memory and cannot be used in calls to realloc
+       or free.
+
+       But we are lucky.  We know that set_column_print_order will
+       call realloc on whatever the ucp2acp member of the Params
+       struct points to.  For the above reasons we cannot (without
+       introducing an ugly hack) put a pointer to malloc'd memory into
+       ucp2acp.  Instead we will set ucp2acp to NULL and rely on the
+       fact that if the first argument to realloc is NULL, realloc
+       just allocates the required memory from scratch.  In other
+       words, set_column_print_order will not notice that we passed a
+       NULL pointer instead of a pointer to malloc'd memory. */
+    in = out;           /* pretend layout file was parsed correctly */
+    clear_err_msg();
+    status = set_column_print_order(&params, &in);
+    TEST_ASSERT_EQUAL_INT_MESSAGE(1, status,
+        "set_column_print_order return value");
+    TEST_ASSERT_EQUAL_INT(9, params.ncolumn);
+    TEST_ASSERT_TRUE(params.columns == NULL);
+    for (i = 0; i < params.ncolumn; i++)
+        TEST_ASSERT_EQUAL_INT(i, params.ucp2acp[i]);
+    TEST_ASSERT_EQUAL_INT(-9, params.ucp2acp[i]);
+}
