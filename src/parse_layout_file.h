@@ -27,4 +27,6 @@ int write_layout_file(const char *file, struct Layout *layout);
 int set_column_print_order(char **columns, int ncolumn, int *ucp2acp,
     struct Layout *layout);
 
+void print_columns(struct Layout *layout);
+
 #endif  /* PARSE_LAYOUT_FILE_H */

@@ -318,3 +318,23 @@ int set_column_print_order(char **columns, int ncolumn, int *ucp2acp,
     }
     return 1;
 }
+
+void print_columns(struct Layout *layout)
+{
+    int i;
+
+    printf("%s", layout->beta_labels[0]);
+    for (i = 1; i < layout->nvar; i++)
+        printf(" %s", layout->beta_labels[i]);
+    printf("\n");
+
+    printf("%s", layout->se_labels[0]);
+    for (i = 1; i < layout->nvar; i++)
+        printf(" %s", layout->se_labels[i]);
+    printf("\n");
+
+    printf("%s", layout->cov_labels[0]);
+    for (i = 1; i < layout->ncov; i++)
+        printf(" %s", layout->cov_labels[i]);
+    printf("\n");
+}
