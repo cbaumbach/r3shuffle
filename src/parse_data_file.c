@@ -1,5 +1,9 @@
 #include "parse_data_file.h"
 #include "parse_layout_file.h"
+#include "err_msg.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
 
 /* The binary data file contains the estimates that result from
    regressing ntrait traits on nsnp snps.  We can imagine all the
@@ -280,4 +284,94 @@ void index2offset(int snp, int trait, unsigned long *offset,
     x += col_within_tile;
 
     *offset = x;
+}
+
+int parse_data_file(struct Params *params, struct Layout *layout)
+{
+    FILE *ifp, *ofp;
+    int nrecord;      /* number of result records in data file */
+    int nrec;         /* number of records read so far */
+    int ncolumn;      /* number of columns in regression results */
+    size_t nbytes;    /* number of bytes used by regression results */
+    char *buf;        /* buffer to hold regression result bytes */
+    double *v;        /* buffer to hold actual regression results */
+    int snp;          /* index of snp in current trait-snp pair */
+    int trait;        /* index of trait in current trait-snp pair */
+    int i;
+
+    if ((ifp = fopen(params->data_file, "rb")) == NULL) {
+        set_err_msg("failed to open file for reading: %s",
+            params->data_file);
+        goto RETURN_ZERO;
+    }
+
+    if (params->output_file == NULL)
+        ofp = stdout;
+    else if ((ofp = fopen(params->output_file, "wb")) == NULL) {
+        set_err_msg("failed to open file for writing: %s",
+            params->output_file);
+        goto CLOSE_DATA_FILE;
+    }
+
+    /* Allocate a buffer large enough to hold the bytes containing the
+       regression results of a single trait-snp pair.  There are nvar
+       betas, nvar standard errors, and ncov covariances.  Each value
+       represents a double of bytes_per_double bytes. */
+    ncolumn = layout->nvar + layout->nvar + layout->ncov;
+    nbytes = ncolumn * layout->bytes_per_double;
+    if ((buf = (char *) malloc(nbytes)) == NULL) {
+        set_err_msg("failed to allocate %lu bytes",
+            (unsigned long) nbytes);
+        goto CLOSE_OUTPUT_FILE;
+    }
+
+    /* Print header. */
+    fprintf(ofp, "trait snp");
+    for (i = 0; i < params->ncolumn; i++)
+        fprintf(ofp, " %s", params->columns[i]);
+    fprintf(ofp, "\n");
+
+    nrecord = layout->nsnp * layout->ntrait;
+    nrec = 0;
+    while (nrec < nrecord) {
+        assert(1 == fread(buf, nbytes, 1, ifp));
+        v = (double *) buf;
+        offset2index(nrec, &snp, &trait, layout);
+        fprintf(ofp, "%s %s", layout->trait_labels[trait],
+            layout->snp_labels[snp]);
+        for (i = 0; i < params->ncolumn; i++)
+            fprintf(ofp, " %.*f", params->ndigit,
+                v[params->ucp2acp[i]]);
+        fprintf(ofp, "\n");
+        ++nrec;
+    }
+
+    free(buf);
+
+    if (params->output_file != NULL  &&  fclose(ofp)) {
+        set_err_msg("failed to close file: %s",
+            params->output_file);
+        goto CLOSE_DATA_FILE;
+    }
+
+    if (fclose(ifp)) {
+        set_err_msg("failed to close file: %s",
+            params->data_file);
+        goto RETURN_ZERO;
+    }
+
+    return 1;
+
+    /* Don't use set_err_msg from here on: if we got here, it means
+       there already was a problem and set_err_msg was used.  Using it
+       again would overwrite the error message which states the
+       initial problem and thus the actual reason behind the 0 return
+       value. */
+CLOSE_OUTPUT_FILE:
+    if (params->output_file != NULL)
+        fclose(ofp);
+CLOSE_DATA_FILE:
+    fclose(ifp);
+RETURN_ZERO:
+    return 0;
 }
