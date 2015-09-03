@@ -326,7 +326,7 @@ int parse_data_file(struct Params *params, struct Layout *layout)
     }
 
     /* Print header. */
-    fprintf(ofp, "trait snp");
+    fprintf(ofp, "snp trait");
     if (params->ncolumn)
         for (i = 0; i < params->ncolumn; i++)
             fprintf(ofp, " %s", params->columns[i]);
@@ -346,8 +346,8 @@ int parse_data_file(struct Params *params, struct Layout *layout)
         assert(1 == fread(buf, nbytes, 1, ifp));
         v = (double *) buf;
         offset2index(nrec, &snp, &trait, layout);
-        fprintf(ofp, "%s %s", layout->trait_labels[trait],
-            layout->snp_labels[snp]);
+        fprintf(ofp, "%s %s", layout->snp_labels[snp],
+            layout->trait_labels[trait]);
         if (params->ncolumn)
             for (i = 0; i < params->ncolumn; i++)
                 fprintf(ofp, " %.*g", params->ndigit,
