@@ -327,8 +327,17 @@ int parse_data_file(struct Params *params, struct Layout *layout)
 
     /* Print header. */
     fprintf(ofp, "trait snp");
-    for (i = 0; i < params->ncolumn; i++)
-        fprintf(ofp, " %s", params->columns[i]);
+    if (params->ncolumn)
+        for (i = 0; i < params->ncolumn; i++)
+            fprintf(ofp, " %s", params->columns[i]);
+    else {
+        for (i = 0; i < layout->nvar; i++)
+            fprintf(ofp, " %s", layout->beta_labels[i]);
+        for (i = 0; i < layout->nvar; i++)
+            fprintf(ofp, " %s", layout->se_labels[i]);
+        for (i = 0; i < layout->ncov; i++)
+            fprintf(ofp, " %s", layout->cov_labels[i]);
+    }
     fprintf(ofp, "\n");
 
     nrecord = layout->nsnp * layout->ntrait;
@@ -339,9 +348,13 @@ int parse_data_file(struct Params *params, struct Layout *layout)
         offset2index(nrec, &snp, &trait, layout);
         fprintf(ofp, "%s %s", layout->trait_labels[trait],
             layout->snp_labels[snp]);
-        for (i = 0; i < params->ncolumn; i++)
-            fprintf(ofp, " %.*f", params->ndigit,
-                v[params->ucp2acp[i]]);
+        if (params->ncolumn)
+            for (i = 0; i < params->ncolumn; i++)
+                fprintf(ofp, " %.*g", params->ndigit,
+                    v[params->ucp2acp[i]]);
+        else
+            for (i = 0; i < ncolumn; i++)
+                fprintf(ofp, " %.*g", params->ndigit, v[i]);
         fprintf(ofp, "\n");
         ++nrec;
     }
