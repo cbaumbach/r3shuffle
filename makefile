@@ -1,6 +1,6 @@
 include path_to_unity
 
-CFLAGS = -Wall -Wextra -g -D_GNU_SOURCE
+CFLAGS = -Wall -Wextra -O2 -D_GNU_SOURCE
 
 UNITY_INCLUDES = -I$(UNITY_HOME)/src \
                  -I$(UNITY_HOME)/extras/fixture/src
