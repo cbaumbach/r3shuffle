@@ -1,108 +1,130 @@
-include path_to_unity
+# ==== COMPILE AND LINK TIME VARIABLES ===============================
 
 CC = gcc
-
 CFLAGS += -Wall -Wextra -O2
+CPPFLAGS += -I include
+CPPFLAGS += $(unity_includes)
+CPPFLAGS += -D _GNU_SOURCE
 
-INCLUDES = -I $(UNITY_HOME)/src \
-           -I $(UNITY_HOME)/extras/fixture/src \
-           -I include
+# ==== MACROS ========================================================
 
-CPPFLAGS += -D _GNU_SOURCE $(INCLUDES)
+SED := sed
+TEE := tee
+MV := mv -f
+RM := rm -f
+MKDIR := mkdir -p
 
-SOURCES = src/parse_command_line_args.c \
-          src/parse_layout_file.c \
-          src/parse_data_file.c \
-          src/err_msg.c
+# $(call exclude-files,list-of-files-to-exclude,list-of-files)
+define exclude-files
+$(strip \
+  $(foreach f, $2, \
+    $(if $(findstring $f, $1),, $f)))
+endef
 
-TEST_SOURCES = test/test_parse_command_line_args.c \
-               test/test_runners/test_parse_command_line_args_runner.c \
-               test/test_parse_layout_file.c \
-               test/test_runners/test_parse_layout_file_runner.c \
-               test/test_parse_data_file.c \
-               test/test_runners/test_parse_data_file_runner.c \
-               test/test_runners/all_tests.c
+# $(call make-dependency-file,source-file,object-file,dependency-file)
+define make-dependency-file
+$(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) $(if $(filter gcc,$(CC)),-MM,-M) $1 | \
+$(SED) -e 's,$(notdir $2) *:,$2 $3:,' > $3.tmp && \
+$(SED) -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *$$//' -e '/^$$/d' \
+       -e 's/\([^\\]\)$$/\1:/' $3.tmp >> $3.tmp && \
+$(MV) $3.tmp $3
+endef
 
-LIBUNITY = build/libunity.a
+make-dependency-file-command = \
+  $(call make-dependency-file,$<,$@,$(subst .o,.d,$@))
 
-LDFLAGS += $(LIBUNITY)
+# $(call subst-dir,files,directory)
+subst-dir = $(strip $(foreach f, $1, $2/$(notdir $f)))
 
-OBJECTS = $(subst .c,.o,$(SOURCES))
 
-TEST_OBJECTS = $(subst .c,.o,$(TEST_SOURCES))
+# ==== FILES =========================================================
 
-TESTS = test/test_runners/all_tests
+primary_directory := src
+test_directory := test
+test_runner_directory := $(test_directory)/test_runners
+unity_directory := $(test_directory)/unity
 
-.PHONY: all test clean
-all: $(TESTS) test r3shuffle
-test: test/test_runners/all_tests.out
-test/tmp:
-	mkdir -p $@
+primary_sources := $(wildcard $(primary_directory)/*.c)
+primary_objects := $(subst .c,.o,$(primary_sources))
+primary_executables := r3shuffle
+
+include path_to_unity
+ifndef UNITY_HOME
+  $(error In ./path_to_unity file, set 'UNITY_HOME = path/to/unity')
+endif
+unity_primary_directory := $(UNITY_HOME)/src
+unity_fixture_directory := $(UNITY_HOME)/extras/fixture/src
+unity_includes := -I $(unity_primary_directory) -I $(unity_fixture_directory)
+unity_primary_sources := $(unity_primary_directory)/unity.c
+unity_fixture_sources := $(unity_fixture_directory)/unity_fixture.c
+unity_sources := $(unity_primary_sources) $(unity_fixture_sources)
+unity_objects := $(subst .c,.o,$(call subst-dir,$(unity_sources),$(unity_directory)))
+unity_dependencies := $(subst .o,.d,$(unity_objects))
+
+test_sources := $(wildcard $(test_directory)/*.c)
+test_sources += $(wildcard $(test_runner_directory)/*.c)
+test_objects := $(subst .c,.o,$(test_sources))
+test_executables := $(test_runner_directory)/all_tests
+test_logfiles := $(addsuffix .log,$(test_executables))
+
+objects := $(primary_objects) $(helper_objects) $(test_objects) $(unity_objects)
+dependencies := $(subst .o,.d,$(objects))
+
+primary_library := $(primary_directory)/libprimary.a
+test_library := $(test_directory)/libtest.a
+unity_library := $(unity_directory)/libunity.a
+libraries := $(test_library) $(unity_library) $(primary_library)
+executables := $(primary_executables) $(test_executables)
+
+
+# ==== RULES =========================================================
+
+# Empty the list of known suffix rules.  We'll roll our own.
+.SUFFIXES:
+
+.PHONY: all
+all: $(primary_executables) test
+
+r3shuffle: $(primary_directory)/main.o $(primary_library)
+	$(LINK.o) $^ -o $@
+
+$(primary_library): $(call exclude-files,$(primary_directory)/main.o,$(primary_objects))
+	$(AR) $(ARFLAGS) $@ $? >/dev/null
+
+$(test_library): $(call exclude-files,$(test_directory)/all_tests.o,$(test_objects))
+	$(AR) $(ARFLAGS) $@ $? >/dev/null
+
+$(unity_directory)/unity.o: $(unity_primary_directory)/unity.c
+	@$(make-dependency-file-command)
+	$(COMPILE.c) -o $@ $<
+
+$(unity_directory)/unity_fixture.o: $(unity_fixture_directory)/unity_fixture.c
+	@$(make-dependency-file-command)
+	$(COMPILE.c) -o $@ $<
+
+$(unity_library): $(unity_objects)
+	$(AR) $(ARFLAGS) $@ $? >/dev/null
+
+.PHONY: test
+test: $(test_executables)
+
+$(test_runner_directory)/all_tests: $(test_runner_directory)/all_tests.o $(libraries) \
+        | $(test_directory)/tmp
+	$(LINK.o) $^ -o $@
+	-$@ | $(TEE) $@.log
+
+$(test_directory)/tmp:
+	$(MKDIR) $@
+
+%.o: %.c
+	@$(make-dependency-file-command)
+	$(COMPILE.c) -o $@ $<
+
+ifneq "$(MAKECMDGOALS)" "clean"
+-include $(dependencies)
+endif
+
+.PHONY: clean
 clean:
-	rm -f r3shuffle $(TESTS) test/test_runners/all_tests.out $(OBJECTS) $(TEST_OBJECTS)
-	rm -rf test/tmp
-
-# ==== parse_command_line_args =======================================
-
-src/parse_command_line_args.o: src/parse_command_line_args.c \
-                               include/parse_command_line_args.h \
-                               include/err_msg.h
-
-test/test_parse_command_line_args.o: test/test_parse_command_line_args.c
-
-test/test_runners/test_parse_command_line_args_runner.o: \
-        test/test_runners/test_parse_command_line_args_runner.c
-
-# ==== parse_layout_file =============================================
-
-src/parse_layout_file.o: src/parse_layout_file.c \
-        include/parse_layout_file.h \
-        include/parse_command_line_args.h \
-        include/err_msg.h
-
-test/test_parse_layout_file.o: test/test_parse_layout_file.c
-
-test/test_runners/test_parse_layout_file_runner.o: \
-        test/test_runners/test_parse_layout_file_runner.c
-
-# ==== test_parse_data_file ==========================================
-
-src/parse_data_file.o: src/parse_data_file.c \
-        include/parse_data_file.h \
-        include/parse_layout_file.h \
-        include/parse_command_line_args.h \
-        include/err_msg.h
-
-test/test_parse_data_file.o: test/test_parse_data_file.c
-
-test/test_runners/test_parse_data_file_runner.o: \
-        test/test_runners/test_parse_data_file_runner.c
-
-# ==== err_msg =======================================================
-
-src/err_msg.o: src/err_msg.c include/err_msg.h
-
-# ==== all_tests =====================================================
-
-test/test_runners/all_tests.out: test/test_runners/all_tests \
-        | test/tmp
-	test/test_runners/all_tests | tee $@
-
-test/test_runners/all_tests: $(OBJECTS) $(TEST_OBJECTS) $(LIBUNITY)
-
-test/test_runners/all_tests.o: test/test_runners/all_tests.c
-
-# ==== unity library =================================================
-$(LIBUNITY): build/unity.o build/unity_fixture.o
-	$(AR) $(ARFLAGS) $@ $^
-
-build/unity.o: $(UNITY_HOME)/src/unity.c
-	$(COMPILE.c) -o $@ $<
-
-build/unity_fixture.o: $(UNITY_HOME)/extras/fixture/src/unity_fixture.c
-	$(COMPILE.c) -o $@ $<
-
-# ==== r3shuffle =====================================================
-
-r3shuffle: src/main.c $(OBJECTS)
-	$(LINK.c) -o $@ $^
+	$(RM) $(dependencies) $(objects) $(libraries) $(executables) $(test_logfiles)
+	$(RM) -r $(test_directory)/tmp
