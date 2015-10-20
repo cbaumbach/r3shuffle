@@ -59,6 +59,8 @@ TEST_SETUP(parse_layout_file)
     in.cov_labels       = NULL;
     in.snp_labels       = NULL;
     in.trait_labels     = NULL;
+
+    clear_err_msg();
 }
 
 TEST_TEAR_DOWN(parse_layout_file)
@@ -123,7 +125,6 @@ TEST(parse_layout_file, bad_magic_number)
 {
     in = out;           /* pretend layout file was parsed correctly */
     in.magic_number = 99;       /* should be 6 */
-    clear_err_msg();
     status = validate_layout(&in);
 
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status,
@@ -137,7 +138,6 @@ TEST(parse_layout_file, bad_bytes_per_double)
 {
     in = out;           /* pretend layout file was parsed correctly */
     in.bytes_per_double = -1;   /* should be >0 */
-    clear_err_msg();
     status = validate_layout(&in);
 
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status,
@@ -151,7 +151,6 @@ TEST(parse_layout_file, bad_number_of_covariates)
 {
     in = out;           /* pretend layout file was parsed correctly */
     in.nvar = 1;        /* should be >=2 */
-    clear_err_msg();
     status = validate_layout(&in);
 
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status,
@@ -222,7 +221,6 @@ TEST(parse_layout_file, bad_number_of_snps)
 {
     in = out;           /* pretend layout file was parsed correctly */
     in.nsnp = -1;       /* should be >0 */
-    clear_err_msg();
     status = validate_layout(&in);
 
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status,
@@ -237,7 +235,6 @@ TEST(parse_layout_file, bad_number_of_traits)
 {
     in = out;           /* pretend layout file was parsed correctly */
     in.ntrait = -1;     /* should be >0 */
-    clear_err_msg();
     status = validate_layout(&in);
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status,
         "validate_layout return value");
@@ -251,7 +248,6 @@ TEST(parse_layout_file, bad_number_of_snps_per_tile)
 {
     in = out;           /* pretend layout file was parsed correctly */
     in.snps_per_tile = -1;      /* should be >0 */
-    clear_err_msg();
     status = validate_layout(&in);
 
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status,
@@ -266,7 +262,6 @@ TEST(parse_layout_file, bad_number_of_traits_per_tile)
 {
     in = out;           /* pretend layout file was parsed correctly */
     in.traits_per_tile = -1;    /* should be >0 */
-    clear_err_msg();
     status = validate_layout(&in);
 
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status,
@@ -281,7 +276,6 @@ TEST(parse_layout_file, bad_max_label_length)
 {
     in = out;           /* pretend layout file was parsed correctly */
     in.max_char = -1;   /* should be >=2 */
-    clear_err_msg();
     status = validate_layout(&in);
 
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status,
@@ -306,7 +300,6 @@ TEST(parse_layout_file, set_column_print_order_with_subset_of_columns)
     int i;
 
     in = out;           /* pretend layout file was parsed correctly */
-    clear_err_msg();
     status = set_column_print_order(&params, &in);
     TEST_ASSERT_EQUAL_INT_MESSAGE(1, status,
         "set_column_print_order return value");
@@ -333,7 +326,6 @@ TEST(parse_layout_file, set_permuted_column_print_order)
     int i;
 
     in = out;           /* pretend layout file was parsed correctly */
-    clear_err_msg();
     status = set_column_print_order(&params, &in);
     TEST_ASSERT_EQUAL_INT_MESSAGE(1, status,
         "set_column_print_order return value");
@@ -353,7 +345,6 @@ TEST(parse_layout_file, invalid_user_supplied_column_label)
                             0, 0, 0, NULL, NULL, NULL};
 
     in = out;           /* pretend layout file was parsed correctly */
-    clear_err_msg();
     status = set_column_print_order(&params, &in);
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status,
         "set_column_print_order return value");
@@ -394,7 +385,6 @@ TEST(parse_layout_file, use_default_columns)
        words, set_column_print_order will not notice that we passed a
        NULL pointer instead of a pointer to malloc'd memory. */
     in = out;           /* pretend layout file was parsed correctly */
-    clear_err_msg();
     status = set_column_print_order(&params, &in);
     TEST_ASSERT_EQUAL_INT_MESSAGE(1, status,
         "set_column_print_order return value");

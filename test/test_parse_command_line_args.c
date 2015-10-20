@@ -18,6 +18,7 @@ TEST_SETUP(parse_command_line_args)
 {
     initialize_parameters(&params);
     optind = 1;                 /* reset getopt_long */
+    clear_err_msg();
 }
 
 TEST_TEAR_DOWN(parse_command_line_args)
@@ -96,11 +97,8 @@ TEST(parse_command_line_args, bad_digits_gives_error)
    causes an error. */
 TEST(parse_command_line_args, digits_over_100_gives_error)
 {
-    char *argv[] = {"ignore", "--digits=100"};
-
-    status = parse_command_line_args(NELEMS(argv), argv, &params);
-
-    TEST_ASSERT_EQUAL_INT_MESSAGE(1, status, "parse status");
+    params.ndigit = 100;
+    params.layout_file = params.data_file = "foobar";
 
     clear_err_msg();
     status = validate_command_line_args(&params);
@@ -114,11 +112,8 @@ TEST(parse_command_line_args, digits_over_100_gives_error)
    an error. */
 TEST(parse_command_line_args, digits_under_0_gives_error)
 {
-    char *argv[] = {"ignore", "--digits=-10"};
-
-    status = parse_command_line_args(NELEMS(argv), argv, &params);
-
-    TEST_ASSERT_EQUAL_INT_MESSAGE(1, status, "parse status");
+    params.ndigit = -10;
+    params.layout_file = params.data_file = "foobar";
 
     clear_err_msg();
     status = validate_command_line_args(&params);
@@ -203,16 +198,9 @@ TEST(parse_command_line_args, input_files_are_set)
         params.data_file, "data file");
 }
 
-/* Test that forgetting to supply an input file lead to an error. */
+/* Test that forgetting to supply an input file leads to an error. */
 TEST(parse_command_line_args, missing_input_files_give_error)
 {
-    char *argv[] = {"ignore", "-otest/data/output.txt"};
-
-    status = parse_command_line_args(NELEMS(argv), argv, &params);
-
-    TEST_ASSERT_EQUAL_INT_MESSAGE(1, status, "parse status");
-
-    clear_err_msg();
     status = validate_command_line_args(&params);
 
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status, "validate status");
@@ -223,13 +211,9 @@ TEST(parse_command_line_args, missing_input_files_give_error)
 /* Test that a non-writable output file results in an error. */
 TEST(parse_command_line_args, non_writable_output_file_gives_error)
 {
-    char *argv[] = {"ignore", "--output", "fake/file", "input_file"};
+    params.output_file = "fake/file";
+    params.layout_file = params.data_file = "foobar";
 
-    status = parse_command_line_args(NELEMS(argv), argv, &params);
-
-    TEST_ASSERT_EQUAL_INT_MESSAGE(1, status, "parse status");
-
-    clear_err_msg();
     status = validate_command_line_args(&params);
 
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status, "validate status");
@@ -258,14 +242,10 @@ TEST(parse_command_line_args, output_file_defaults_to_stdout)
    accepted. */
 TEST(parse_command_line_args, existing_writable_output_file)
 {
-    char *argv[] = {"ignore", "--output", "test/data/output.txt",
-                    "test/data/input"};
+    params.output_file = "test/data/output.txt";
+    params.layout_file = "test/data/input.iout";
+    params.data_file = "test/data/input.out";
 
-    status = parse_command_line_args(NELEMS(argv), argv, &params);
-
-    TEST_ASSERT_EQUAL_INT_MESSAGE(1, status, "parse status");
-
-    clear_err_msg();
     status = validate_command_line_args(&params);
 
     TEST_ASSERT_EQUAL_INT_MESSAGE(1, status, "validate status");
@@ -274,14 +254,9 @@ TEST(parse_command_line_args, existing_writable_output_file)
 /* Test that a non-existing input file gives an error. */
 TEST(parse_command_line_args, non_existing_input_files_give_error)
 {
-    char *argv[] = {"ignore", "--output", "test/data/output.txt",
-                    "foo"};
+    params.layout_file = "foo.iout";
+    params.data_file = "foo.iout";
 
-    status = parse_command_line_args(NELEMS(argv), argv, &params);
-
-    TEST_ASSERT_EQUAL_INT_MESSAGE(1, status, "parse status");
-
-    clear_err_msg();
     status = validate_command_line_args(&params);
 
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status, "validate status");
@@ -292,14 +267,9 @@ TEST(parse_command_line_args, non_existing_input_files_give_error)
 /* Test that a non-existent layout file causes an error. */
 TEST(parse_command_line_args, non_existing_layout_file_gives_error)
 {
-    char *argv[] = {"ignore", "--output", "test/data/output.txt",
-                    "test/data/data_only"};
+    params.layout_file = "test/data/data_only.iout";
+    params.data_file = "test/data/data_only.out";
 
-    status = parse_command_line_args(NELEMS(argv), argv, &params);
-
-    TEST_ASSERT_EQUAL_INT_MESSAGE(1, status, "parse status");
-
-    clear_err_msg();
     status = validate_command_line_args(&params);
 
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status, "validate status");
@@ -310,14 +280,9 @@ TEST(parse_command_line_args, non_existing_layout_file_gives_error)
 /* Test that a non-existent data file causes an error. */
 TEST(parse_command_line_args, non_existing_data_file_gives_error)
 {
-    char *argv[] = {"ignore", "--output", "test/data/output.txt",
-                    "test/data/layout_only"};
+    params.layout_file = "test/data/layout_only.iout";
+    params.data_file = "test/data/layout_only.out";
 
-    status = parse_command_line_args(NELEMS(argv), argv, &params);
-
-    TEST_ASSERT_EQUAL_INT_MESSAGE(1, status, "parse status");
-
-    clear_err_msg();
     status = validate_command_line_args(&params);
 
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status, "validate status");
@@ -332,13 +297,11 @@ TEST(parse_command_line_args,
 {
     struct stat buf;
     char *output_file = "test/data/delete_me.txt";
-    char *argv[] = {"ignore", "-o", output_file, "test/data/input"};
 
-    status = parse_command_line_args(NELEMS(argv), argv, &params);
+    params.output_file = output_file;
+    params.layout_file = "test/data/input.iout";
+    params.data_file = "test/data/input.out";
 
-    TEST_ASSERT_EQUAL_INT_MESSAGE(1, status, "parse status");
-
-    clear_err_msg();
     status = validate_command_line_args(&params);
 
     TEST_ASSERT_EQUAL_INT_MESSAGE(1, status, "validate status");
@@ -355,13 +318,10 @@ TEST(parse_command_line_args,
    error. */
 TEST(parse_command_line_args, empty_output_filename_gives_error)
 {
-    char *argv[] = {"ignore", "--output", "", "test/data/input"};
+    params.output_file = "";
+    params.layout_file = "test/data/input.iout";
+    params.data_file = "test/data/input.out";
 
-    status = parse_command_line_args(NELEMS(argv), argv, &params);
-
-    TEST_ASSERT_EQUAL_INT_MESSAGE(1, status, "parse status");
-
-    clear_err_msg();
     status = validate_command_line_args(&params);
 
     TEST_ASSERT_EQUAL_INT_MESSAGE(0, status, "validate status");
